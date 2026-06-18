@@ -1,0 +1,162 @@
+import sqlite3
+
+DB_NAME = "expenses.db"
+
+
+def create_table():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        description TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def add_expense():
+    date = input("Enter Date (YYYY-MM-DD): ")
+    category = input("Enter Category: ")
+    amount = float(input("Enter Amount: "))
+    description = input("Enter Description: ")
+
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO expenses(date, category, amount, description)
+    VALUES (?, ?, ?, ?)
+    """, (date, category, amount, description))
+
+    conn.commit()
+    conn.close()
+
+    print("\nExpense Added Successfully!\n")
+
+
+def view_expenses():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM expenses")
+    records = cursor.fetchall()
+
+    print("\n----- Expense List -----")
+
+    if not records:
+        print("No expenses found.")
+
+    for row in records:
+        print(
+            f"ID:{row[0]} | Date:{row[1]} | "
+            f"Category:{row[2]} | Amount:${row[3]:.2f} | "
+            f"Description:{row[4]}"
+        )
+
+    conn.close()
+    print()
+
+
+def total_expenses():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT SUM(amount) FROM expenses")
+    total = cursor.fetchone()[0]
+
+    conn.close()
+
+    total = total if total else 0
+
+    print(f"\nTotal Expenses: ${total:.2f}\n")
+
+
+def monthly_report():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    SELECT substr(date,1,7) AS month,
+           SUM(amount)
+    FROM expenses
+    GROUP BY month
+    ORDER BY month
+    """)
+
+    records = cursor.fetchall()
+
+    print("\n===== Monthly Expense Report =====")
+
+    if not records:
+        print("No records found.")
+
+    for month, total in records:
+        print(f"{month} : ${total:.2f}")
+
+    conn.close()
+    print()
+
+
+def delete_expense():
+    expense_id = input("Enter Expense ID to Delete: ")
+
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "DELETE FROM expenses WHERE id=?",
+        (expense_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    print("Expense Deleted Successfully.\n")
+
+
+def main():
+    create_table()
+
+    while True:
+        print("========== Expense Tracker ==========")
+        print("1. Add Expense")
+        print("2. View Expenses")
+        print("3. Total Expenses")
+        print("4. Monthly Report")
+        print("5. Delete Expense")
+        print("6. Exit")
+
+        choice = input("\nEnter Choice: ")
+
+        if choice == "1":
+            add_expense()
+
+        elif choice == "2":
+            view_expenses()
+
+        elif choice == "3":
+            total_expenses()
+
+        elif choice == "4":
+            monthly_report()
+
+        elif choice == "5":
+            delete_expense()
+
+        elif choice == "6":
+            print("Thank You!")
+            break
+
+        else:
+            print("Invalid Choice!\n")
+
+
+if __name__ == "__main__":
+    main()
